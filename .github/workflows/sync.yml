@@ -1,0 +1,36 @@
+name: Upstream Sync
+
+on:
+  schedule:
+    - cron: "0 */6 * * *"  # 每 6 小時執行一次
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync_latest_from_upstream:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout target repo
+        uses: actions/checkout@v4
+
+      - name: Manual sync with allow-unrelated-histories
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git remote add upstream https://github.com/senshinya/MoonTV.git
+          git fetch upstream
+          git checkout main
+          git pull upstream main --allow-unrelated-histories
+          git push origin main
+
+      - name: Delete workflow runs
+        if: success()
+        uses: Mattraks/delete-workflow-runs@main
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
+          retain_days: 0
+          keep_minimum_runs: 2
